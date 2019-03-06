@@ -19,6 +19,11 @@ import java.util.Map;
 
 @RestController
 public class FacebookController {
+    @RequestMapping(value = "/", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity index() {
+        return ResponseEntity.ok(Collections.emptyList());
+    }
     @RequestMapping(value = "/facebook", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity validate(
