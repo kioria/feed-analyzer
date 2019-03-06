@@ -3,11 +3,12 @@ package com;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.apache.kafka.streams.kstream.KTable;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.util.HashMap;
 import java.util.Properties;
@@ -17,6 +18,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * processes asynchronous event streams from Kafka has very little additional operational complexity
  * beyond the normal Kafka producer and consumer APIs.
  */
+@SpringBootApplication
 public class Main {
 
     private static final String LOGONS_TOPIC = "logons";
@@ -24,12 +26,13 @@ public class Main {
     private static final String NOTIFICATIONS_TOPIC = "notifications";
 
     public static void main(String[] args) {
+        SpringApplication.run(Main.class, args);
 
-        startFacebookEventsSimulatingProducer();
+     /*   startFacebookEventsSimulatingProducer();
         startPushNotificatorProducer();
 
         new KafkaStreams(getStreamTopology(), getStreamsConfig())
-                .start();
+                .start();*/
     }
 
     private static void startPushNotificatorProducer() {

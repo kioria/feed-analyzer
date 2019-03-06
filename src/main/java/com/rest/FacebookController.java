@@ -25,7 +25,7 @@ public class FacebookController {
             @RequestParam(value = "hub.mode", defaultValue = "subscribe") String hubMode,
             @RequestParam(value = "hub.challenge") int hubChallenge,
             @RequestParam(value = "hub.verify_token") String hubVerifyToken) {
-        if ("subscribe".equalsIgnoreCase(hubMode) && "myToken".equalsIgnoreCase(hubVerifyToken)) {
+        if ("subscribe".equalsIgnoreCase(hubMode) && "dana".equalsIgnoreCase(hubVerifyToken)) {
             return ResponseEntity.ok(hubChallenge);
         } else {
             return ResponseEntity.badRequest().build();
