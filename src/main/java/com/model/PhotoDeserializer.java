@@ -18,7 +18,7 @@ public class PhotoDeserializer extends JsonDeserializer<Photo> {
             DeserializationContext deserializationContext) throws IOException {
         ObjectCodec objectCodec = jsonParser.getCodec();
         JsonNode jsonNode = objectCodec.readTree(jsonParser);
-
+        System.out.println(jsonNode);
         Photo photo = new Photo();
         photo.setField(jsonNode.get("field").asText());
         photo.setVerb(jsonNode.get("value").get("verb").asText());
