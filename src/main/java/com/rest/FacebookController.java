@@ -1,5 +1,7 @@
 package com.rest;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.model.Notification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +22,9 @@ public class FacebookController {
     @RequestMapping(value = "/", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity index() {
-        return ResponseEntity.ok(notifications);
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        String jsonOutput = gson.toJson(notifications);
+        return ResponseEntity.ok(jsonOutput);
     }
     @RequestMapping(value = "/facebook", method = RequestMethod.GET)
     @ResponseBody
