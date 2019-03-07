@@ -16,11 +16,11 @@ public class PhotoSerializer extends JsonSerializer<Photo> {
             JsonGenerator jsonGenerator,
             SerializerProvider serializerProvider) throws IOException {
         jsonGenerator.writeStartObject();
+        jsonGenerator.writeStringField("field", photo.getField());
         jsonGenerator.writeObjectFieldStart("value");
         jsonGenerator.writeStringField("verb", photo.getVerb());
         jsonGenerator.writeStringField("object_id", photo.getObject_id());
         jsonGenerator.writeEndObject();
-        jsonGenerator.writeStringField("field", photo.getField());
         jsonGenerator.writeEndObject();
     }
 }

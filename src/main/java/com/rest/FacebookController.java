@@ -11,15 +11,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 public class FacebookController {
+    private static List<Photo> photos = new ArrayList<>();
     @RequestMapping(value = "/", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity index() {
-        return ResponseEntity.ok(Collections.emptyList());
+        return ResponseEntity.ok(photos);
     }
     @RequestMapping(value = "/facebook", method = RequestMethod.GET)
     @ResponseBody
@@ -39,6 +40,9 @@ public class FacebookController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity processEventNotification(@RequestBody Photo photo) {
         System.out.println("/facebook endpoint called with request " + photo);
-        return ResponseEntity.ok(Arrays.asList(photo));
+        photos.add(photo);
+        ResponseEntity<List<Photo>> ok = ResponseEntity.ok(photos);
+        System.out.println("/facebook endpoint returning " + ok);
+        return ok;
     }
 }
