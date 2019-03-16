@@ -97,7 +97,7 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
                 // Select an item.
                 String item = orderItems.get(category).get(rng.nextInt(orderItems.get(category).size()));
 
-                String id = String.valueOf(rng.nextInt());
+                String id = String.valueOf(rng.nextInt()& Integer.MAX_VALUE);
                 Notification notification = Notification.builder()
                         .object(category)
                         .entry(Arrays.asList(Entry.builder()
