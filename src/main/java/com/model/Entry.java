@@ -1,22 +1,16 @@
 package com.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * {
- *  "time": 1551962658,
- *  "id": "0",
- *  "changed_fields": [
- *  "toothpaste"
- *  ],
- *  "uid": "0"
- *  }
- */
+@Builder
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class Entry {
     //A UNIX timestamp indicating when the Event Notification was sent (not when the change that triggered the notification occurred).
     private String time;

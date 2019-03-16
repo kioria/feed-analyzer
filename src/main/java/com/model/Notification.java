@@ -1,28 +1,17 @@
 package com.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
-/**
- *
- {
- "entry": [
- {
- "time": 1551962658,
- "id": "0",
- "changed_fields": [
- "Lacalut"
- ],
- "uid": "0"
- }
- ],
- "object": "toothpaste"
- }
- */
+@AllArgsConstructor
+
 public class Notification {
     /*
     The object's type
