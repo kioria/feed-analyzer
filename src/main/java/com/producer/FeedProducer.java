@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class FeedProducer {
     private static final Logger logger = LoggerFactory.getLogger(FeedProducer.class);
-    @Value("${tpd.topic-name}")
+    @Value("${tpd.topic-deduplicator}")
     private String topicName;
 
     @Autowired

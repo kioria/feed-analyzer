@@ -14,21 +14,16 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @RestController
 public class OrderController {
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
     private FeedProducer producer;
-    private static List<Notification> notifications = new ArrayList<>();
     @RequestMapping(value = "/", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity index() throws JsonProcessingException {
-        String jsonOutput = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(notifications);
-        return ResponseEntity.ok(jsonOutput);
+        return ResponseEntity.ok("Hello from order controller!");
     }
 
     @RequestMapping(value = "/order", method = RequestMethod.POST)
@@ -36,8 +31,7 @@ public class OrderController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity processOrderNotification(@RequestBody Notification notification) throws JsonProcessingException {
         System.out.println("/order endpoint called with request " + notification);
-        notifications.add(notification);
         producer.sendMessage( objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(notification));
-        return ResponseEntity.ok(notifications);
+        return ResponseEntity.ok().build();
     }
 }

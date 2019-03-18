@@ -70,8 +70,6 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
 
-    @Value("${tpd.topic-name}")
-    private String topicName;
     @Value("${tpd.base-url}")
     private String baseUrl;
     @Autowired
@@ -115,7 +113,7 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
 
 
                     Thread.sleep(500L);
-                } catch (InterruptedException e /*| JsonProcessingException e*/) {
+                } catch (InterruptedException e) {
                     //ignore
                 } // Close try/catch on Thread.sleep.
             } // Close infinite loop.
