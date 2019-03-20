@@ -18,6 +18,7 @@ spring:
 
 tpd:
   state-store: notification-store
+  maintain-duration-ms: 30
   topic-deduplicator: orders
   topic-analyzer: orders-unique
   topic-wellness: orders-wellness

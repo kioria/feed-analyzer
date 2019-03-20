@@ -4,9 +4,16 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.processor.PunctuationType;
+import org.apache.kafka.streams.processor.Punctuator;
+import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
+
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 /**
  * Stateful discarding of duplicates records from the input stream. Neither key nor value are
@@ -25,6 +32,7 @@ import org.slf4j.LoggerFactory;
 public class Deduplicator<K, V, E> implements Transformer<K, V, KeyValue<K, V>> {
     private final Logger logger = LoggerFactory.getLogger(Deduplicator.class);
     private String stateStore;
+    private long purgeInterval;
 
     private ProcessorContext context;
     /**
@@ -40,16 +48,41 @@ public class Deduplicator<K, V, E> implements Transformer<K, V, KeyValue<K, V>> 
      */
     private final KeyValueMapper<K, V, E> idExtractor;
 
-    public Deduplicator(KeyValueMapper<K, V, E> idExtractor, String stateStore) {
+    public Deduplicator(KeyValueMapper<K, V, E> idExtractor, String stateStore, long purgeInterval ) {
         this.idExtractor = idExtractor;
         this.stateStore = stateStore;
+        this.purgeInterval = purgeInterval;
     }
 
     @Override
     public void init(ProcessorContext context) {
         this.context = context;
         this.eventIdStore = (KeyValueStore<E, Long>) context.getStateStore(stateStore);
+        this.context.schedule(Duration.of(purgeInterval, SECONDS), PunctuationType.STREAM_TIME, new Punctuator() {
+            @Override
+            public void punctuate(long timestamp) {
+                purgeExpiredEventIds(timestamp);
+            }
+        });
     }
+
+    private void purgeExpiredEventIds(final long currentStreamTimeMs) {
+        try (final KeyValueIterator<E, Long> iterator = eventIdStore.all()) {
+            while (iterator.hasNext()) {
+                final KeyValue<E, Long> entry = iterator.next();
+                final long eventTimestamp = entry.value;
+                if (hasExpired(eventTimestamp, currentStreamTimeMs)) {
+                    logger.info("Purging expired record from the state-store " + entry.key);
+                    eventIdStore.delete(entry.key);
+                }
+            }
+        }
+    }
+
+    private boolean hasExpired(final long eventTimestamp, final long currentStreamTimeMs) {
+        return (currentStreamTimeMs - eventTimestamp) > purgeInterval;
+    }
+
 
     /***
      * stateful record-by-record operation

@@ -35,6 +35,8 @@ public class KafkaStreamsConfig {
     private String topicWellness;
     @Value("${tpd.state-store}")
     private String stateStore;
+    @Value("${tpd.maintain-duration-ms}")
+    private long purgeInterval;
 
     @Bean
     public StoreBuilder storeBuilder() {
@@ -63,7 +65,7 @@ public class KafkaStreamsConfig {
 
     @Bean
     public Transformer deduplicator() {
-        return new Deduplicator<>(applyDeduplicatorFunction(), stateStore);
+        return new Deduplicator<>(applyDeduplicatorFunction(), stateStore, purgeInterval);
     }
 
     @Bean
