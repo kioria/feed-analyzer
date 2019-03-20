@@ -35,7 +35,6 @@ public class OrderController {
     @ResponseBody
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity processOrderNotification(@RequestBody Notification notification) throws JsonProcessingException {
-        System.out.println("/order endpoint called with request " + notification);
         producer.sendMessage( objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(notification));
         return ResponseEntity.ok().build();
     }

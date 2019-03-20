@@ -23,4 +23,3 @@ tpd:
   topic-analyzer: orders-unique
   topic-wellness: orders-wellness
   base-url: http://localhost:8080
-  messages-per-request: 1000

@@ -77,7 +77,7 @@ public class KafkaStreamsConfig {
 
         new KafkaStreamBrancher<String, Notification>()
                 .branch((key, value) -> "Wellness and Healthcare".equalsIgnoreCase(value.getObject()), (ks) -> ks.to(topicWellness))
-                //deduplication will be done for all except wellness and healthcare
+                //de-duplication will be done for all except wellness and healthcare
                 .branch((key, value) -> true, (ks) -> ks.transform(() -> deduplicator(), stateStore).to(topicTo))
                 .onTopOf(stream);
 

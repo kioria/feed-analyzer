@@ -24,6 +24,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import static com.repository.OrderService.orderCategories;
 import static com.repository.OrderService.orderItems;
 
+/**
+ * Figures out category and item and sends messages in infinite loop
+ */
 @Service
 public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent> {
 
@@ -41,15 +44,16 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
     private RestTemplate restTemplate;
 
     @Autowired
-    private void setRestTemplate(RestTemplateBuilder builder){
+    private void setRestTemplate(RestTemplateBuilder builder) {
         this.restTemplate = builder.build();
     }
 
-    /**
-     * Figures out category and item and sends messages in infinite loop
-     */
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        startEventsSimulatingProducer();
+    }
+
     private void startEventsSimulatingProducer() {
-        // Start producing logon messages.
         new Thread(() -> {
             while (true) {
                 ThreadLocalRandom rng = ThreadLocalRandom.current();
@@ -58,23 +62,15 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
                 // Select an item.
                 String item = orderItems.get(category).get(rng.nextInt(orderItems.get(category).size()));
 
-                String id = String.valueOf(rng.nextInt()& Integer.MAX_VALUE);
-                Notification notification = Notification.builder()
-                        .object(category)
-                        .entry(Arrays.asList(Entry.builder()
-                                .changed_fields(Arrays.asList(item))
-                                .id(id)
-                                .uid(id)
-                                .time(String.valueOf(System.currentTimeMillis()))
-                                .build()))
-                        .build();
+                String id = String.valueOf(rng.nextInt() & Integer.MAX_VALUE);
+                Notification notification = getNotification(category, item, id);
 
                 try {
-                    restTemplate.exchange(Paths.get(this.baseUrl, new String[]{"/order"}).toString().replace(":/", "://"), HttpMethod.POST, new HttpEntity(notification, new HttpHeaders()),
+                    restTemplate.exchange(getExchangePath(),
+                            HttpMethod.POST,
+                            new HttpEntity(notification, new HttpHeaders()),
                             new ParameterizedTypeReference<String>() {
                             }, new Object[0]);
-
-
                     Thread.sleep(500L);
                 } catch (InterruptedException e) {
                     //ignore
@@ -83,8 +79,19 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
         }).start();
     }
 
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
-        startEventsSimulatingProducer();
+    private Notification getNotification(String category, String item, String id) {
+        return Notification.builder()
+                            .object(category)
+                            .entry(Arrays.asList(Entry.builder()
+                                    .changed_fields(Arrays.asList(item))
+                                    .id(id)
+                                    .uid(id)
+                                    .time(String.valueOf(System.currentTimeMillis()))
+                                    .build()))
+                            .build();
+    }
+
+    private String getExchangePath() {
+        return Paths.get(this.baseUrl, new String[]{"/order"}).toString().replace(":/", "://");
     }
 }
