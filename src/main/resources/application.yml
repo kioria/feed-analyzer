@@ -17,9 +17,9 @@ spring:
     name: pushBtn-stream-app
 
 tpd:
+  state-store: notification-store
   topic-deduplicator: orders
   topic-analyzer: orders-unique
   topic-wellness: orders-wellness
-  topic-aggregator: orders-categorized
   base-url: http://localhost:8080
   messages-per-request: 1000

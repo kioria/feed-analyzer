@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Models situation when clients do send data directly to our public API. Say, from mobile apps.
+ * Thus handling failures gracefully using retries, message re-delivery, locking, and two-phase commits
+ * is not possible.
+ */
 @RestController
 public class OrderController {
     @Autowired

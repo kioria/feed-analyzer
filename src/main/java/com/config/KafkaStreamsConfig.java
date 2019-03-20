@@ -1,6 +1,8 @@
 package com.config;
 
+import com.model.Entry;
 import com.model.Notification;
+import com.transformer.Deduplicator;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -8,6 +10,10 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KeyValueMapper;
+import org.apache.kafka.streams.kstream.Transformer;
+import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.Stores;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.KafkaStreamBrancher;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
+import java.util.List;
 import java.util.Properties;
 
 @Configuration
@@ -26,6 +33,16 @@ public class KafkaStreamsConfig {
     private String topicTo;
     @Value("${tpd.topic-wellness}")
     private String topicWellness;
+    @Value("${tpd.state-store}")
+    private String stateStore;
+
+    @Bean
+    public StoreBuilder storeBuilder() {
+        return Stores.keyValueStoreBuilder(
+                Stores.persistentKeyValueStore(stateStore),
+                Serdes.String(),
+                Serdes.Long());
+    }
 
     @Bean
     public KafkaStreams deduplicatorStream(
@@ -45,19 +62,31 @@ public class KafkaStreamsConfig {
     }
 
     @Bean
+    public Transformer deduplicator() {
+        return new Deduplicator<>(applyDeduplicatorFunction(), stateStore);
+    }
+
+    @Bean
     public Topology deduplicatorTopology() {
-        final StreamsBuilder streamsBuilder = new StreamsBuilder();
-//KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
+        final StreamsBuilder streamsBuilder = new StreamsBuilder().addStateStore(storeBuilder());
+       //KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
         KStream<String, Notification> stream = streamsBuilder
                 .stream(topicFrom, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)));
-        //TODO add de-duplication here
-        //TODO add grouping here
+
         new KafkaStreamBrancher<String, Notification>()
                 .branch((key, value) -> "Wellness and Healthcare".equalsIgnoreCase(value.getObject()), (ks) -> ks.to(topicWellness))
                 //deduplication will be done for all except wellness and healthcare
-                .branch((key, value) -> true, (ks) -> ks.to(topicTo))
+                .branch((key, value) -> true, (ks) -> ks.transform(() -> deduplicator(), stateStore).to(topicTo))
                 .onTopOf(stream);
 
         return streamsBuilder.build();
+    }
+
+    private KeyValueMapper<String, Notification, String> applyDeduplicatorFunction() {
+        return (key, value) -> {
+            List<Entry> entry = value.getEntry();
+            String changedField = entry.stream().map(e -> e.getChanged_fields()).flatMap(List::stream).findFirst().orElse(null);
+            return changedField;
+        };
     }
 }
