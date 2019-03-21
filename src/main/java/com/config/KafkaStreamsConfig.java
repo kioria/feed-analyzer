@@ -70,6 +70,10 @@ public class KafkaStreamsConfig {
         return new KafkaStreams(deduplicatorTopology(), props);
     }
 
+    /**
+     * purge interval (retain window) affects staful aggregation downstream
+     * @return
+     */
     @Bean
     public Transformer deduplicator() {
         return new Deduplicator<>(applyDeduplicatorFunction(), stateStore, purgeInterval);
@@ -130,7 +134,7 @@ public class KafkaStreamsConfig {
                 .table(topicAdditionalDetails, Consumed.with(Serdes.String(), new JsonSerde<>(Category.class)));
 
         streamsBuilder
-                .stream(topicDeduplicator, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)))
+                .stream(topicUnique, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)))
                 //in a fact we are creating a new stream here by filtering the original one and then
                // we are modifying it with map what causes repartitioning (because we are altering the key)
                 // specifying for every record a new key
