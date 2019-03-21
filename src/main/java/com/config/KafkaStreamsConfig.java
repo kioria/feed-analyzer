@@ -1,5 +1,6 @@
 package com.config;
 
+import com.model.Category;
 import com.model.Entry;
 import com.model.Notification;
 import com.transformer.Deduplicator;
@@ -36,6 +37,8 @@ public class KafkaStreamsConfig {
     private String topicAggregated;
     @Value("${tpd.topic-wellness}")
     private String topicWellness;
+    @Value("${tpd.topic-additional-details}")
+    private String topicAdditionalDetails;
     @Value("${tpd.state-store}")
     private String stateStore;
     @Value("${tpd.maintain-duration-ms}")
@@ -153,17 +156,9 @@ public class KafkaStreamsConfig {
     @Bean
     public Topology enricherTopology() {
         final StreamsBuilder streamsBuilder = new StreamsBuilder().addStateStore(storeBuilder());
-        //KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
+        //KTtream instances on the StreamsBuilder have to be declared before the application context is refreshed.
         streamsBuilder
-                .stream(topicDeduplicator, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)))
-                //in a fact we are creating a new stream here by filtering the original one and then
-                // we are modifying it with map what causes repartitioning (because we are altering the key)
-                // specifying for every record a new key
-                //this key will be needed for further stages
-                .filter((key, value) -> exludeGivenCategory(value))
-                .map((key, value) -> KeyValue.pair(value.getObject(), value.getEntry()))
-                //key is needed because we want to enrich our stream and join it with the table created from the other stream
-                .to(topicAggregated);
+                .table(topicAdditionalDetails, Consumed.with(Serdes.String(), new JsonSerde<>( Category.class)));
 
         return streamsBuilder.build();
     }

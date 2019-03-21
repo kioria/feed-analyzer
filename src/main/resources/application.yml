@@ -16,7 +16,7 @@ spring:
   application:
     name-deduplicator: pushBtn-stream-app-deduplicator
     name-aggregator: pushBtn-stream-app-aggregator
-    name-enricher: pushBtn-stream-app-aggregator
+    name-enricher: pushBtn-stream-app-enricher
 
 tpd:
   state-store: notification-store
