@@ -126,8 +126,6 @@ public class KafkaStreamsConfig {
     public Topology consumerTopology() {
         final StreamsBuilder streamsBuilder = new StreamsBuilder();
         //KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
-        //KTtream instances on the StreamsBuilder have to be declared before the application context is refreshed.
-
         KTable<String, Category> categoryKTable = streamsBuilder
                 .table(topicAdditionalDetails, Consumed.with(Serdes.String(), new JsonSerde<>(Category.class)));
 
@@ -140,8 +138,15 @@ public class KafkaStreamsConfig {
                 .filter((key, value) -> exludeGivenCategory("Wellness and Healthcare", value))
                 .map((key, value) -> KeyValue.pair(value.getObject(), value.getEntry()))
                //key is needed because we want to enrich our stream and join it with the table created from the other stream
-                //second parameter - what kind of thing to produce in a new stream
+                //second parameter - what kind of a thing to produce in a new stream
                .join(categoryKTable, (orderEvent, categoryDetails)-> orderEvent)
+                //let us count elements by key
+                //for this type aggregation grouping is required to be done before. This has repartitioning overhead
+                //of creating a new internal topic
+                .groupBy((eventId, event)-> eventId)
+                //ignores null keys, not all updates are send downstream, is backed up by internal changelog topic, state store and de-duplicating cache
+                .count()
+                .toStream()
                 .to(topicAggregated);
 
         return streamsBuilder.build();
@@ -151,31 +156,5 @@ public class KafkaStreamsConfig {
             String toExclude,
             Notification value) {
         return !toExclude.equalsIgnoreCase(value.getObject());
-    }
-
-    @Bean
-    public KafkaStreams enricherStream(
-            KafkaProperties kafkaProperties,
-            @Value("${spring.application.name-enricher}") String appName) {
-        final Properties props = new Properties();
-
-        props.putAll(kafkaProperties.getProperties());
-        // stream config centric ones
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, appName);
-
-        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, JsonSerde.class);
-
-        return new KafkaStreams(enricherTopology(), props);
-    }
-    @Bean
-    public Topology enricherTopology() {
-        final StreamsBuilder streamsBuilder = new StreamsBuilder();
-        //KTtream instances on the StreamsBuilder have to be declared before the application context is refreshed.
-        streamsBuilder
-                .table(topicAdditionalDetails, Consumed.with(Serdes.String(), new JsonSerde<>( Category.class)));
-
-        return streamsBuilder.build();
     }
 }
