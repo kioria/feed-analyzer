@@ -28,9 +28,11 @@ import java.util.Properties;
 public class KafkaStreamsConfig {
 
     @Value("${tpd.topic-deduplicator}")
-    private String topicFrom;
-    @Value("${tpd.topic-analyzer}")
-    private String topicTo;
+    private String topicDeduplicator;
+    @Value("${tpd.topic-unique}")
+    private String topicUnique;
+    @Value("${tpd.topic-aggregated}")
+    private String topicAggregated;
     @Value("${tpd.topic-wellness}")
     private String topicWellness;
     @Value("${tpd.state-store}")
@@ -48,8 +50,7 @@ public class KafkaStreamsConfig {
 
     @Bean
     public KafkaStreams deduplicatorStream(
-            KafkaProperties kafkaProperties,
-            @Value("${spring.application.name}") String appName) {
+            KafkaProperties kafkaProperties, @Value("${spring.application.name-deduplicator}") String appName) {
         final Properties props = new Properties();
 
         props.putAll(kafkaProperties.getProperties());
@@ -73,12 +74,12 @@ public class KafkaStreamsConfig {
         final StreamsBuilder streamsBuilder = new StreamsBuilder().addStateStore(storeBuilder());
        //KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
         KStream<String, Notification> stream = streamsBuilder
-                .stream(topicFrom, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)));
+                .stream(topicDeduplicator, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)));
 
         new KafkaStreamBrancher<String, Notification>()
                 .branch((key, value) -> "Wellness and Healthcare".equalsIgnoreCase(value.getObject()), (ks) -> ks.to(topicWellness))
                 //de-duplication will be done for all except wellness and healthcare
-                .branch((key, value) -> true, (ks) -> ks.transform(() -> deduplicator(), stateStore).to(topicTo))
+                .branch((key, value) -> true, (ks) -> ks.transform(() -> deduplicator(), stateStore).to(topicUnique))
                 .onTopOf(stream);
 
         return streamsBuilder.build();
@@ -90,5 +91,37 @@ public class KafkaStreamsConfig {
             String changedField = entry.stream().map(e -> e.getChanged_fields()).flatMap(List::stream).findFirst().orElse(null);
             return changedField;
         };
+    }
+
+    @Bean
+    public KafkaStreams consumerStream(
+            KafkaProperties kafkaProperties, @Value("${spring.application.name-aggregator}") String appName) {
+        final Properties props = new Properties();
+
+        props.putAll(kafkaProperties.getProperties());
+        // stream config centric ones
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, appName);
+
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, JsonSerde.class);
+
+        return new KafkaStreams(consumerTopology(), props);
+    }
+
+    @Bean
+    public Topology consumerTopology() {
+        final StreamsBuilder streamsBuilder = new StreamsBuilder().addStateStore(storeBuilder());
+        //KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
+        KStream<String, Notification> stream = streamsBuilder
+                .stream(topicDeduplicator, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)));
+
+     /*   new KafkaStreamBrancher<String, Notification>()
+                .branch((key, value) -> "Wellness and Healthcare".equalsIgnoreCase(value.getObject()), (ks) -> ks.to(topicWellness))
+                //de-duplication will be done for all except wellness and healthcare
+                .branch((key, value) -> true, (ks) -> ks.transform(() -> deduplicator(), stateStore).to(topicUnique))
+                .onTopOf(stream);*/
+
+        return streamsBuilder.build();
     }
 }

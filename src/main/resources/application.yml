@@ -12,14 +12,16 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
     bootstrap-servers: localhost:9092
-
+#application.id for stream client is Kafka consumer group.id
   application:
-    name: pushBtn-stream-app
+    name-deduplicator: pushBtn-stream-app-deduplicator
+    name-aggregator: pushBtn-stream-app-aggregator
 
 tpd:
   state-store: notification-store
   maintain-duration-ms: 30
   topic-deduplicator: orders
-  topic-analyzer: orders-unique
+  topic-unique: orders-unique
+  topic-aggregated: orders-aggregated
   topic-wellness: orders-wellness
   base-url: http://localhost:8080

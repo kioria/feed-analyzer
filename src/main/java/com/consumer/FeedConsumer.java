@@ -11,7 +11,8 @@ import java.io.IOException;
 public class FeedConsumer {
     private final Logger logger = LoggerFactory.getLogger(FeedConsumer.class);
 
-    @KafkaListener(topics =  "#{'${tpd.topic-analyzer}'}", groupId = "group_id")
+    @KafkaListener(
+            topics =  "#{'${tpd.topic-unique}'}", groupId = "#{'${spring.kafka.consumer.group-id}'}")
     public void consume(String message) throws IOException {
         logger.info(String.format("#### -> Consumed message -> %s", message));
     }
