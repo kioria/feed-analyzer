@@ -12,6 +12,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Transformer;
 import org.apache.kafka.streams.state.StoreBuilder;
@@ -115,26 +116,41 @@ public class KafkaStreamsConfig {
         return new KafkaStreams(consumerTopology(), props);
     }
 
+    /**
+     * All KStream instances exposed to a KafkaStreams instance by a single StreamsBuilder
+     * are started and stopped at the same time, even if they have different logic.
+     * In other words, all streams defined by a StreamsBuilder are tied with a single lifecycle control.
+     * @return
+     */
     @Bean
     public Topology consumerTopology() {
-        final StreamsBuilder streamsBuilder = new StreamsBuilder().addStateStore(storeBuilder());
+        final StreamsBuilder streamsBuilder = new StreamsBuilder();
         //KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
-       streamsBuilder
+        //KTtream instances on the StreamsBuilder have to be declared before the application context is refreshed.
+
+        KTable<String, Category> categoryKTable = streamsBuilder
+                .table(topicAdditionalDetails, Consumed.with(Serdes.String(), new JsonSerde<>(Category.class)));
+
+        streamsBuilder
                 .stream(topicDeduplicator, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)))
                 //in a fact we are creating a new stream here by filtering the original one and then
                // we are modifying it with map what causes repartitioning (because we are altering the key)
                 // specifying for every record a new key
                 //this key will be needed for further stages
-                .filter((key, value) -> exludeGivenCategory(value))
+                .filter((key, value) -> exludeGivenCategory("Wellness and Healthcare", value))
                 .map((key, value) -> KeyValue.pair(value.getObject(), value.getEntry()))
                //key is needed because we want to enrich our stream and join it with the table created from the other stream
+                //second parameter - what kind of thing to produce in a new stream
+               .join(categoryKTable, (orderEvent, categoryDetails)-> orderEvent)
                 .to(topicAggregated);
 
         return streamsBuilder.build();
     }
 
-    private boolean exludeGivenCategory(Notification value) {
-        return !"Wellness and Healthcare".equalsIgnoreCase(value.getObject());
+    private boolean exludeGivenCategory(
+            String toExclude,
+            Notification value) {
+        return !toExclude.equalsIgnoreCase(value.getObject());
     }
 
     @Bean
@@ -155,7 +171,7 @@ public class KafkaStreamsConfig {
     }
     @Bean
     public Topology enricherTopology() {
-        final StreamsBuilder streamsBuilder = new StreamsBuilder().addStateStore(storeBuilder());
+        final StreamsBuilder streamsBuilder = new StreamsBuilder();
         //KTtream instances on the StreamsBuilder have to be declared before the application context is refreshed.
         streamsBuilder
                 .table(topicAdditionalDetails, Consumed.with(Serdes.String(), new JsonSerde<>( Category.class)));
