@@ -2,6 +2,7 @@ package com.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.model.Category;
 import com.model.Notification;
 import com.producer.FeedProducer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,15 @@ public class OrderController {
     @ResponseBody
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity processOrderNotification(@RequestBody Notification notification) throws JsonProcessingException {
-        producer.sendMessage( objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(notification));
+        producer.sendOrder( objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(notification));
+        return ResponseEntity.ok().build();
+    }
+
+    @RequestMapping(value = "/category", method = RequestMethod.POST)
+    @ResponseBody
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity processCategoryNotification(@RequestBody Category category) throws JsonProcessingException {
+        producer.sendCategory( objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(category));
         return ResponseEntity.ok().build();
     }
 }

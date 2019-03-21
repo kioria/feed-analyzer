@@ -3,6 +3,7 @@ package com.producer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.model.Entry;
 import com.model.Notification;
+import com.repository.ExtraDetailsService;
 import com.repository.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +56,13 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
 
     private void startEventsSimulatingProducer() {
         new Thread(() -> {
+            Arrays.stream(ExtraDetailsService.orderCategories).forEach(category -> {
+                restTemplate.exchange(getCategoryPath(),
+                        HttpMethod.POST,
+                        new HttpEntity(category, new HttpHeaders()),
+                        new ParameterizedTypeReference<String>() {
+                        }, new Object[0]);
+            });
             while (true) {
                 ThreadLocalRandom rng = ThreadLocalRandom.current();
                 // Select a category.
@@ -66,7 +74,7 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
                 Notification notification = getNotification(category, item, id);
 
                 try {
-                    restTemplate.exchange(getExchangePath(),
+                    restTemplate.exchange(getOrderPath(),
                             HttpMethod.POST,
                             new HttpEntity(notification, new HttpHeaders()),
                             new ParameterizedTypeReference<String>() {
@@ -91,7 +99,11 @@ public class FeedSimulator implements ApplicationListener<ContextRefreshedEvent>
                             .build();
     }
 
-    private String getExchangePath() {
+    private String getOrderPath() {
         return Paths.get(this.baseUrl, new String[]{"/order"}).toString().replace(":/", "://");
+    }
+
+    private String getCategoryPath() {
+        return Paths.get(this.baseUrl, new String[]{"/category"}).toString().replace(":/", "://");
     }
 }

@@ -16,6 +16,7 @@ spring:
   application:
     name-deduplicator: pushBtn-stream-app-deduplicator
     name-aggregator: pushBtn-stream-app-aggregator
+    name-enricher: pushBtn-stream-app-aggregator
 
 tpd:
   state-store: notification-store
@@ -24,4 +25,5 @@ tpd:
   topic-unique: orders-unique
   topic-aggregated: orders-aggregated
   topic-wellness: orders-wellness
+  topic-additional-details: orders-categories
   base-url: http://localhost:8080

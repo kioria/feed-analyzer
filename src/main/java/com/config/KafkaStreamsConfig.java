@@ -118,11 +118,13 @@ public class KafkaStreamsConfig {
         //KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
        streamsBuilder
                 .stream(topicDeduplicator, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)))
-                //in a fact we are creating a new stream here by modifying the existing one by filtering and
+                //in a fact we are creating a new stream here by filtering the original one and then
+               // we are modifying it with map what causes repartitioning (because we are altering the key)
                 // specifying for every record a new key
                 //this key will be needed for further stages
                 .filter((key, value) -> exludeGivenCategory(value))
                 .map((key, value) -> KeyValue.pair(value.getObject(), value.getEntry()))
+               //key is needed because we want to enrich our stream and join it with the table created from the other stream
                 .to(topicAggregated);
 
         return streamsBuilder.build();
@@ -130,5 +132,39 @@ public class KafkaStreamsConfig {
 
     private boolean exludeGivenCategory(Notification value) {
         return !"Wellness and Healthcare".equalsIgnoreCase(value.getObject());
+    }
+
+    @Bean
+    public KafkaStreams enricherStream(
+            KafkaProperties kafkaProperties,
+            @Value("${spring.application.name-enricher}") String appName) {
+        final Properties props = new Properties();
+
+        props.putAll(kafkaProperties.getProperties());
+        // stream config centric ones
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, appName);
+
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
+        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, JsonSerde.class);
+
+        return new KafkaStreams(enricherTopology(), props);
+    }
+    @Bean
+    public Topology enricherTopology() {
+        final StreamsBuilder streamsBuilder = new StreamsBuilder().addStateStore(storeBuilder());
+        //KStream instances on the StreamsBuilder have to be declared before the application context is refreshed.
+        streamsBuilder
+                .stream(topicDeduplicator, Consumed.with(Serdes.String(), new JsonSerde<>(Notification.class)))
+                //in a fact we are creating a new stream here by filtering the original one and then
+                // we are modifying it with map what causes repartitioning (because we are altering the key)
+                // specifying for every record a new key
+                //this key will be needed for further stages
+                .filter((key, value) -> exludeGivenCategory(value))
+                .map((key, value) -> KeyValue.pair(value.getObject(), value.getEntry()))
+                //key is needed because we want to enrich our stream and join it with the table created from the other stream
+                .to(topicAggregated);
+
+        return streamsBuilder.build();
     }
 }
