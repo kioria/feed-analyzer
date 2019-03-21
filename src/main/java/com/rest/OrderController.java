@@ -44,7 +44,7 @@ public class OrderController {
     @ResponseBody
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity processCategoryNotification(@RequestBody Category category) throws JsonProcessingException {
-        producer.sendCategory( objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(category));
+        producer.sendCategory( category.getId(), objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(category));
         return ResponseEntity.ok().build();
     }
 }

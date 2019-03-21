@@ -1,5 +1,6 @@
 package com.producer;
 
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -19,7 +20,7 @@ public class FeedProducer {
     public void sendOrder(String message) {
         this.kafkaTemplate.send(orders, message);
 
-    } public void sendCategory(String message) {
-        this.kafkaTemplate.send(categories, message);
+    } public void sendCategory(String key, String message) {
+        this.kafkaTemplate.send(new ProducerRecord(categories,key, message));
     }
 }
